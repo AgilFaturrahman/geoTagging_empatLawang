@@ -310,8 +310,7 @@
   map.addLayer(markerCluster);
 
   let pointsData = null;     // full parsed points.json
-  let subInfoIndex = {};     // idsubsls -> {nmkec,nmdesa,nmsls,subsls,luas,nm_ketua,nm_gedung}
-  let subsslCount = {};      // idsubsls -> jumlah titik
+  let subInfoIndex = {};     // idsubsls -> {nmkec,nmdesa,nmsls,subsls,luas,nm_gedung}
 
   const tree = {};           // kecKey -> {name, desa:{desaKey -> {name, sls:{slsKey -> {name, subsls:{subKey -> {name}}}}}}}
 
@@ -408,16 +407,14 @@
   }
 
   function slsPopupHtml(props){
-    const idsubsls = props.idsubsls;
-    const count = subsslCount[idsubsls] || 0;
     return `
       <div class="popup-title">${escapeHtml(props.nmsls)} — Sub-SLS ${escapeHtml(props.subsls)}</div>
       <div class="popup-row"><span class="k">Kecamatan:</span> ${escapeHtml(props.nmkec)}</div>
       <div class="popup-row"><span class="k">Desa:</span> ${escapeHtml(props.nmdesa)}</div>
-      <div class="popup-row"><span class="k">Ketua/Pengurus:</span> ${escapeHtml(props.nm_ketua||'-')}</div>
       <div class="popup-row"><span class="k">Nama gedung:</span> ${escapeHtml(props.nm_gedung||'-')}</div>
       <div class="popup-row"><span class="k">Luas:</span> ${props.luas ? props.luas.toLocaleString('id') + ' m²' : '-'}</div>
-      <div class="popup-row"><span class="k">Titik geotag:</span> ${count.toLocaleString('id')}</div>
+      <div class="popup-row"><span class="k">Nama PML:</span> ${escapeHtml(props.nm_pml||'-')}</div>
+      <div class="popup-row"><span class="k">Nama PPL:</span> ${escapeHtml(props.nm_ppl||'-')}</div>
     `;
   }
 
@@ -538,17 +535,14 @@
     boundaryFeatures = sls.features;
     pointsData = points;
 
-    // build subInfoIndex + counts
+    // build subInfoIndex
     boundaryFeatures.forEach(f => {
       const p = f.properties;
       subInfoIndex[p.idsubsls] = {
         nmkec: p.nmkec, nmdesa: p.nmdesa, nmsls: p.nmsls,
         subslsLabel: 'Sub-SLS ' + p.subsls, luas: p.luas,
-        nm_ketua: p.nm_ketua, nm_gedung: p.nm_gedung
+        nm_gedung: p.nm_gedung
       };
-    });
-    pointsData.points.forEach(rec => {
-      subsslCount[rec[0]] = (subsslCount[rec[0]] || 0) + 1;
     });
 
     // build hierarchy tree

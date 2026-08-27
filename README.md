@@ -14,6 +14,7 @@ vendor/
   leaflet/            <- library peta Leaflet (di-bundle lokal, tidak perlu internet ke CDN)
   markercluster/       <- plugin pengelompokan titik (Leaflet.markercluster)
 etl.py               <- script Python untuk membangun ulang data/ dari file sumber
+daftar_petugas.csv   <- daftar nama PML/PPL per wilayah (dipakai etl.py, lihat bagian di bawah)
 ```
 
 ## Cara menjalankan / hosting
@@ -40,7 +41,7 @@ File ini adalah **static site murni** (HTML + JS + JSON), tidak butuh backend/se
 - Toggle tampilkan/sembunyikan titik **Keluarga** vs **Usaha** (beda warna: biru = Keluarga, oranye = Usaha).
 - Toggle tampil/sembunyikan batas polygon SLS.
 - Klik titik → detail (nama, status keberadaan, jumlah anggota/usaha, penggunaan bangunan, link buka di FASIH).
-- Klik polygon SLS → info wilayah (kecamatan/desa/SLS/sub-SLS, ketua/pengurus, luas, jumlah titik geotag di wilayah itu).
+- Klik polygon SLS → info wilayah (kecamatan/desa/SLS/sub-SLS, nama gedung, luas, nama PML & PPL yang bertugas di wilayah itu).
 - Ringkasan jumlah titik yang sedang ditampilkan vs total.
 - Toggle tampilkan/sembunyikan titik **Bangunan Kosong** (abu-abu) — dideteksi otomatis dari titik ber-jenis Usaha yang nama usahanya mengandung kata "kosong" (mis. "BANGUNAN KOSONG", "RUMAH KOSONG"), terpisah dari Usaha yang beneran ada isinya.
 - Info "Data kondisi per" dan "Terakhir diproses" di sidebar kiri bawah.
@@ -61,6 +62,34 @@ DATA_AS_OF_OVERRIDE = "20 Agustus 2026 14:00 WIB"
 ```
 Nilai ini akan dipakai apa adanya dan mengabaikan tanggal file CSV.
 
+## Info Nama PML & PPL
+
+Popup saat klik polygon SLS menampilkan nama **PML** (Pengawas/pemeriksa Lapangan) dan **PPL**
+(Petugas Pendataan Lapangan) yang ditugaskan di wilayah itu. Data ini diambil dari file
+`daftar_petugas.csv` yang dibaca oleh `etl.py` lewat variabel `PETUGAS_IN` di bagian atas script.
+
+Kalau kantor memberi daftar petugas dalam format Excel (`.xlsx`):
+1. Buka file-nya di Excel.
+2. **File → Save As** → pilih format **CSV UTF-8 (Comma delimited) (*.csv)**.
+3. Taruh file CSV hasilnya di folder yang sama dengan `etl.py`, beri nama `daftar_petugas.csv`
+   (atau ganti nama filenya di variabel `PETUGAS_IN`).
+
+Kolom yang wajib ada di CSV ini (nama kolom harus persis sama):
+- `KODE WILAYAH` — kode 16 digit yang sama persis dengan `KODE SUB-SLS` di CSV geotagging.
+- `Nama PML`
+- `Nama PPL`
+
+Kalau belum ada datanya, boleh dikosongkan dengan mengubah baris berikut di `etl.py` jadi:
+```python
+PETUGAS_IN = None
+```
+Popup SLS akan tetap muncul seperti biasa, hanya baris Nama PML/Nama PPL-nya jadi "-".
+
+Kalau ada wilayah SLS yang kodenya tidak ditemukan di `daftar_petugas.csv` (misalnya wilayah
+non-pemukiman seperti hutan/perkebunan yang memang tidak ada petugasnya), `etl.py` akan
+mencetak catatan berapa banyak wilayah yang tidak cocok, dan baris Nama PML/PPL-nya otomatis
+tampil "-" tanpa error.
+
 ## Catatan penting
 
 - **Tile Google Satellite yang dipakai di sini bukan lewat Google Maps API resmi** (tidak pakai API key, cara umum yang dipakai banyak proyek open-source). Cocok untuk pemakaian internal/terbatas. Untuk pemakaian publik skala besar/jangka panjang sebaiknya pertimbangkan ganti ke Esri World Imagery (gratis & resmi) atau Google Maps Platform resmi (berbayar, perlu API key).
@@ -68,7 +97,7 @@ Nilai ini akan dipakai apa adanya dan mengabaikan tanggal file CSV.
 
 ## Update data di kemudian hari
 
-Kalau ada file GeoJSON SLS atau geotagging baru:
+Kalau ada file GeoJSON SLS, geotagging, atau daftar petugas yang baru:
 1. Taruh file sumber baru, sesuaikan path di bagian atas `etl.py`.
 2. Jalankan `python3 etl.py` — ini akan menulis ulang `data/sls.geojson` dan `data/points.json`.
 3. Upload ulang (atau `git push` kalau pakai GitHub Pages) — situs otomatis pakai data terbaru.
