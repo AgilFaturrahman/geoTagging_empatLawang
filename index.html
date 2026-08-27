@@ -310,7 +310,7 @@
   map.addLayer(markerCluster);
 
   let pointsData = null;     // full parsed points.json
-  let subInfoIndex = {};     // idsubsls -> {nmkec,nmdesa,nmsls,subsls,luas,nm_gedung}
+  let subInfoIndex = {};     // idsubsls -> {nmkec,nmdesa,nmsls,subsls,luas,nm_gedung,nm_pml,nm_ppl}
 
   const tree = {};           // kecKey -> {name, desa:{desaKey -> {name, sls:{slsKey -> {name, subsls:{subKey -> {name}}}}}}}
 
@@ -402,6 +402,8 @@
       <div class="popup-row"><span class="k">Desa:</span> ${escapeHtml(info.nmdesa||'-')}</div>
       <div class="popup-row"><span class="k">SLS:</span> ${escapeHtml(info.nmsls||'-')}</div>
       <div class="popup-row"><span class="k">Sub-SLS:</span> ${escapeHtml(info.subslsLabel||'-')}</div>
+      <div class="popup-row"><span class="k">Nama PML:</span> ${escapeHtml(info.nm_pml||'-')}</div>
+      <div class="popup-row"><span class="k">Nama PPL:</span> ${escapeHtml(info.nm_ppl||'-')}</div>
       <a class="popup-link" href="${link}" target="_blank" rel="noopener">Buka di FASIH ↗</a>
     `;
   }
@@ -541,7 +543,7 @@
       subInfoIndex[p.idsubsls] = {
         nmkec: p.nmkec, nmdesa: p.nmdesa, nmsls: p.nmsls,
         subslsLabel: 'Sub-SLS ' + p.subsls, luas: p.luas,
-        nm_gedung: p.nm_gedung
+        nm_gedung: p.nm_gedung, nm_pml: p.nm_pml, nm_ppl: p.nm_ppl
       };
     });
 
