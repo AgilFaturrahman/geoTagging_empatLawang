@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Peta Geotagging — Kabupaten Empat Lawang</title>
+
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="vendor/markercluster/MarkerCluster.css" />
+<link rel="stylesheet" href="vendor/markercluster/MarkerCluster.Default.css" />
+
+<style>
+  :root{
+    --sidebar-w: 300px;
+    --accent: #2563eb;
+    --accent-usaha: #f97316;
+    --accent-kosong: #64748b;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --bg: #f8fafc;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); }
+  #app{ display:flex; height:100vh; width:100vw; overflow:hidden; }
+
+  #sidebar{
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background:#fff;
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }
+  #sidebar-header{
+    padding:16px 18px 12px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  #sidebar-header h1{
+    font-size:16px;
+    margin:0 0 2px 0;
+    font-weight:700;
+  }
+  #sidebar-header p{
+    margin:0;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .section{
+    padding:14px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  .section h2{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--muted);
+    margin:0 0 10px 0;
+    font-weight:700;
+  }
+  .field{ margin-bottom:10px; }
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  select{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    background:#fff;
+    color:var(--text);
+  }
+  select:disabled{ background:#f1f5f9; color:#94a3b8; }
+
+  #reset-btn{
+    width:100%;
+    margin-top:4px;
+    padding:8px;
+    border:1px solid var(--border);
+    background:#f1f5f9;
+    border-radius:6px;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--text);
+  }
+  #reset-btn:hover{ background:#e2e8f0; }
+
+  .checkbox-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .checkbox-row input{ width:16px; height:16px; }
+
+  .dot{
+    width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0;
+  }
+  .dot-keluarga{ background:var(--accent); }
+  .dot-usaha{ background:var(--accent-usaha); }
+  .dot-kosong{ background:var(--accent-kosong); }
+
+  #stats{
+    font-size:13px;
+    line-height:1.6;
+  }
+  #stats b{ font-size:20px; display:block; }
+  #stats .sub{ color:var(--muted); font-size:12px; }
+
+  #data-info{ font-size:12px; }
+  .data-info-row{ margin-bottom:6px; }
+  .data-info-row:last-child{ margin-bottom:0; }
+  .data-info-label{ display:block; color:var(--muted); }
+  .data-info-value{ display:block; font-weight:600; color:var(--text); margin-top:1px; }
+
+  #loading{
+    padding:14px 18px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  #map-wrap{ flex:1; position:relative; }
+  #map{ height:100%; width:100%; }
+
+  .leaflet-popup-content{ font-size:13px; line-height:1.5; min-width:220px; }
+  .popup-title{ font-weight:700; font-size:14px; margin-bottom:4px; }
+  .tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:600;
+    padding:2px 7px;
+    border-radius:10px;
+    color:#fff;
+    margin-bottom:6px;
+  }
+  .tag-keluarga{ background:var(--accent); }
+  .tag-usaha{ background:var(--accent-usaha); }
+  .tag-kosong{ background:var(--accent-kosong); }
+  .popup-row{ margin:2px 0; }
+  .popup-row .k{ color:var(--muted); }
+  .popup-link{ display:inline-block; margin-top:6px; color:var(--accent); text-decoration:none; font-weight:600; }
+  .popup-link:hover{ text-decoration:underline; }
+
+  .sls-popup .popup-title{ color:#0f766e; }
+
+  #footer-note{
+    padding:12px 18px;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:auto;
+  }
+
+  @media (max-width: 720px){
+    :root{ --sidebar-w: 100%; }
+    #app{ flex-direction:column; }
+    #sidebar{ width:100%; min-width:0; max-height:45vh; }
+    #map-wrap{ flex:1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>Peta Geotagging</h1>
+      <p>Kabupaten Empat Lawang — filter berjenjang</p>
+    </div>
+
+    <div class="section">
+      <h2>Wilayah</h2>
+      <div class="field">
+        <label for="sel-kec">Kecamatan</label>
+        <select id="sel-kec"><option value="">Semua Kecamatan</option></select>
+      </div>
+      <div class="field">
+        <label for="sel-desa">Desa/Kelurahan</label>
+        <select id="sel-desa" disabled><option value="">Semua Desa</option></select>
+      </div>
+      <div class="field">
+        <label for="sel-sls">SLS</label>
+        <select id="sel-sls" disabled><option value="">Semua SLS</option></select>
+      </div>
+      <div class="field">
+        <label for="sel-subsls">Sub-SLS</label>
+        <select id="sel-subsls" disabled><option value="">Semua Sub-SLS</option></select>
+      </div>
+      <button id="reset-btn">↺ Reset Filter</button>
+    </div>
+
+    <div class="section">
+      <h2>Tampilan Titik</h2>
+      <div class="checkbox-row">
+        <input type="checkbox" id="chk-keluarga" checked />
+        <span class="dot dot-keluarga"></span>
+        <label for="chk-keluarga" style="margin:0;">Keluarga</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="chk-usaha" checked />
+        <span class="dot dot-usaha"></span>
+        <label for="chk-usaha" style="margin:0;">Usaha</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="chk-kosong" checked />
+        <span class="dot dot-kosong"></span>
+        <label for="chk-kosong" style="margin:0;">Bangunan Kosong</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="chk-boundary" checked />
+        <label for="chk-boundary" style="margin:0;">Tampilkan batas SLS</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Ringkasan</h2>
+      <div id="stats">
+        <b id="stat-shown">–</b>
+        <span class="sub" id="stat-total">memuat data…</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Info Data</h2>
+      <div id="data-info">
+        <div class="data-info-row">
+          <span class="data-info-label">🕐 Data kondisi per</span>
+          <span class="data-info-value" id="data-as-of">memuat…</span>
+        </div>
+        <div class="data-info-row">
+          <span class="data-info-label">🔄 Terakhir diproses</span>
+          <span class="data-info-value" id="data-generated-at">memuat…</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">⏳ Memuat data peta…</div>
+
+    <div id="footer-note">
+      Basemap: Google Satellite (tidak resmi, untuk pemakaian internal).<br/>
+      Sumber data: QGIS SLS + hasil geotagging.
+    </div>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+  </div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/markercluster/leaflet.markercluster.js"></script>
+<script>
+(function(){
+
+  // ---------- Map & basemaps ----------
+  const map = L.map('map', { zoomControl: true, preferCanvas: true });
+
+  const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    maxZoom: 21,
+    attribution: 'Imagery &copy; Google'
+  }).addTo(map);
+
+  const hybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    maxZoom: 21,
+    attribution: 'Imagery &copy; Google'
+  });
+
+  const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  });
+
+  L.control.layers({
+    'Satelit': satellite,
+    'Hybrid (satelit + label)': hybrid,
+    'Jalan (OSM)': streets
+  }, null, { position: 'topright' }).addTo(map);
+
+  // ---------- Icons ----------
+  function dotIcon(color){
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.6);"></div>`,
+      iconSize: [14,14],
+      iconAnchor: [7,7],
+      popupAnchor: [0,-7]
+    });
+  }
+  const keluargaIcon = dotIcon('#2563eb');
+  const usahaIcon = dotIcon('#f97316');
+  const kosongIcon = dotIcon('#64748b');
+
+  // titik Usaha dengan nama mengandung "kosong" (mis. "BANGUNAN KOSONG", "RUMAH KOSONG")
+  // dianggap bangunan kosong, ditandai warna abu-abu terpisah dari Usaha biasa.
+  function isBangunanKosong(jenisIdx, nama){
+    return jenisIdx===1 && typeof nama === 'string' && nama.toLowerCase().includes('kosong');
+  }
+
+  // ---------- State ----------
+  let boundaryLayer = null;
+  let boundaryFeatures = [];
+  let markerCluster = L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 17 });
+  map.addLayer(markerCluster);
+
+  let pointsData = null;     // full parsed points.json
+  let subInfoIndex = {};     // idsubsls -> {nmkec,nmdesa,nmsls,subsls,luas,nm_ketua,nm_gedung}
+  let subsslCount = {};      // idsubsls -> jumlah titik
+
+  const tree = {};           // kecKey -> {name, desa:{desaKey -> {name, sls:{slsKey -> {name, subsls:{subKey -> {name}}}}}}}
+
+  const selKec = document.getElementById('sel-kec');
+  const selDesa = document.getElementById('sel-desa');
+  const selSls = document.getElementById('sel-sls');
+  const selSubsls = document.getElementById('sel-subsls');
+  const chkKeluarga = document.getElementById('chk-keluarga');
+  const chkUsaha = document.getElementById('chk-usaha');
+  const chkKosong = document.getElementById('chk-kosong');
+  const chkBoundary = document.getElementById('chk-boundary');
+  const resetBtn = document.getElementById('reset-btn');
+  const statShown = document.getElementById('stat-shown');
+  const statTotal = document.getElementById('stat-total');
+  const loadingEl = document.getElementById('loading');
+  const dataAsOfEl = document.getElementById('data-as-of');
+  const dataGeneratedAtEl = document.getElementById('data-generated-at');
+
+  function sortByName(entries){
+    return entries.sort((a,b)=> a[1].name.localeCompare(b[1].name, 'id'));
+  }
+
+  function fillSelect(sel, entries, placeholder){
+    sel.innerHTML = '';
+    const optAll = document.createElement('option');
+    optAll.value = '';
+    optAll.textContent = placeholder;
+    sel.appendChild(optAll);
+    sortByName(entries).forEach(([key,node])=>{
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = node.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function refreshKecOptions(){
+    fillSelect(selKec, Object.entries(tree), 'Semua Kecamatan');
+  }
+
+  function refreshDesaOptions(){
+    selDesa.disabled = !selKec.value;
+    if(!selKec.value){ fillSelect(selDesa, [], 'Semua Desa'); return; }
+    const node = tree[selKec.value];
+    fillSelect(selDesa, Object.entries(node.desa), 'Semua Desa');
+  }
+
+  function refreshSlsOptions(){
+    selSls.disabled = !(selKec.value && selDesa.value);
+    if(!selKec.value || !selDesa.value){ fillSelect(selSls, [], 'Semua SLS'); return; }
+    const node = tree[selKec.value].desa[selDesa.value];
+    fillSelect(selSls, Object.entries(node.sls), 'Semua SLS');
+  }
+
+  function refreshSubslsOptions(){
+    selSubsls.disabled = !(selKec.value && selDesa.value && selSls.value);
+    if(!selKec.value || !selDesa.value || !selSls.value){ fillSelect(selSubsls, [], 'Semua Sub-SLS'); return; }
+    const node = tree[selKec.value].desa[selDesa.value].sls[selSls.value];
+    fillSelect(selSubsls, Object.entries(node.subsls), 'Semua Sub-SLS');
+  }
+
+  function currentPrefix(){
+    if(selSubsls.value) return selSubsls.value;
+    if(selSls.value) return selSls.value;
+    if(selDesa.value) return selDesa.value;
+    if(selKec.value) return selKec.value;
+    return '';
+  }
+
+  // ---------- Popups ----------
+  function pointPopupHtml(rec){
+    const [idsubsls, lat, lon, jenisIdx, statusIdx, nama, jml, bangunanIdx, id] = rec;
+    const info = subInfoIndex[idsubsls] || {};
+    const kosong = isBangunanKosong(jenisIdx, nama);
+    const jenisLabel = kosong ? 'Bangunan Kosong' : pointsData.jenisLegend[jenisIdx];
+    const statusLabel = pointsData.statusLegend[statusIdx];
+    const bangunanLabel = pointsData.bangunanLegend[bangunanIdx];
+    const jmlLabel = jenisIdx===0 ? 'Jml anggota keluarga' : 'Jml usaha ditemukan';
+    const tagClass = jenisIdx===0 ? 'tag-keluarga' : (kosong ? 'tag-kosong' : 'tag-usaha');
+    const link = pointsData.assignmentBase + id;
+    return `
+      <div class="popup-title">${nama ? escapeHtml(nama) : '(tanpa nama)'}</div>
+      <span class="tag ${tagClass}">${jenisLabel}</span>
+      <div class="popup-row"><span class="k">Status:</span> ${escapeHtml(statusLabel)}</div>
+      <div class="popup-row"><span class="k">${jmlLabel}:</span> ${jml===null || jml===undefined ? '-' : jml}</div>
+      <div class="popup-row"><span class="k">Penggunaan bangunan:</span> ${escapeHtml(bangunanLabel)}</div>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:6px 0;"/>
+      <div class="popup-row"><span class="k">Kecamatan:</span> ${escapeHtml(info.nmkec||'-')}</div>
+      <div class="popup-row"><span class="k">Desa:</span> ${escapeHtml(info.nmdesa||'-')}</div>
+      <div class="popup-row"><span class="k">SLS:</span> ${escapeHtml(info.nmsls||'-')}</div>
+      <div class="popup-row"><span class="k">Sub-SLS:</span> ${escapeHtml(info.subslsLabel||'-')}</div>
+      <a class="popup-link" href="${link}" target="_blank" rel="noopener">Buka di FASIH ↗</a>
+    `;
+  }
+
+  function slsPopupHtml(props){
+    const idsubsls = props.idsubsls;
+    const count = subsslCount[idsubsls] || 0;
+    return `
+      <div class="popup-title">${escapeHtml(props.nmsls)} — Sub-SLS ${escapeHtml(props.subsls)}</div>
+      <div class="popup-row"><span class="k">Kecamatan:</span> ${escapeHtml(props.nmkec)}</div>
+      <div class="popup-row"><span class="k">Desa:</span> ${escapeHtml(props.nmdesa)}</div>
+      <div class="popup-row"><span class="k">Ketua/Pengurus:</span> ${escapeHtml(props.nm_ketua||'-')}</div>
+      <div class="popup-row"><span class="k">Nama gedung:</span> ${escapeHtml(props.nm_gedung||'-')}</div>
+      <div class="popup-row"><span class="k">Luas:</span> ${props.luas ? props.luas.toLocaleString('id') + ' m²' : '-'}</div>
+      <div class="popup-row"><span class="k">Titik geotag:</span> ${count.toLocaleString('id')}</div>
+    `;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------- Boundary layer ----------
+  function buildBoundaryLayer(){
+    boundaryLayer = L.geoJSON(null, {
+      style: { color:'#facc15', weight:1.5, fillColor:'#facc15', fillOpacity:0.05 },
+      onEachFeature: (feature, layer) => {
+        layer.on('click', () => layer.bindPopup(slsPopupHtml(feature.properties), {className:'sls-popup'}).openPopup());
+        layer.on('mouseover', () => layer.setStyle({ fillOpacity:0.25, weight:2.5 }));
+        layer.on('mouseout', () => layer.setStyle({ fillOpacity:0.05, weight:1.5 }));
+      }
+    });
+  }
+
+  function applyBoundaryFilter(prefix){
+    boundaryLayer.clearLayers();
+    if(!chkBoundary.checked) return;
+    const filtered = boundaryFeatures.filter(f => f.properties.idsubsls.startsWith(prefix));
+    boundaryLayer.addData(filtered);
+  }
+
+  // ---------- Points render ----------
+  function applyPointFilter(){
+    const prefix = currentPrefix();
+    const showKeluarga = chkKeluarga.checked;
+    const showUsaha = chkUsaha.checked;
+    const showKosong = chkKosong.checked;
+
+    markerCluster.clearLayers();
+    let shown = 0;
+    const markers = [];
+
+    for(const rec of pointsData.points){
+      const idsubsls = rec[0];
+      if(prefix && !idsubsls.startsWith(prefix)) continue;
+      const jenisIdx = rec[3];
+      const nama = rec[5];
+      const kosong = isBangunanKosong(jenisIdx, nama);
+      if(jenisIdx===0 && !showKeluarga) continue;
+      if(jenisIdx===1 && !kosong && !showUsaha) continue;
+      if(kosong && !showKosong) continue;
+
+      const lat = rec[1], lon = rec[2];
+      const icon = jenisIdx===0 ? keluargaIcon : (kosong ? kosongIcon : usahaIcon);
+      const marker = L.marker([lat,lon], { icon });
+      marker.bindPopup('', { maxWidth: 280 });
+      marker.on('popupopen', function(){
+        marker.setPopupContent(pointPopupHtml(rec));
+      });
+      markers.push(marker);
+      shown++;
+    }
+
+    markerCluster.addLayers(markers);
+    applyBoundaryFilter(prefix);
+
+    statShown.textContent = shown.toLocaleString('id');
+    statTotal.textContent = `dari total ${pointsData.points.length.toLocaleString('id')} titik`;
+  }
+
+  // ---------- Events ----------
+  selKec.addEventListener('change', () => {
+    selDesa.value = ''; selSls.value=''; selSubsls.value='';
+    refreshDesaOptions(); refreshSlsOptions(); refreshSubslsOptions();
+    applyPointFilter();
+    zoomToSelection();
+  });
+  selDesa.addEventListener('change', () => {
+    selSls.value=''; selSubsls.value='';
+    refreshSlsOptions(); refreshSubslsOptions();
+    applyPointFilter();
+    zoomToSelection();
+  });
+  selSls.addEventListener('change', () => {
+    selSubsls.value='';
+    refreshSubslsOptions();
+    applyPointFilter();
+    zoomToSelection();
+  });
+  selSubsls.addEventListener('change', () => { applyPointFilter(); zoomToSelection(); });
+
+  chkKeluarga.addEventListener('change', applyPointFilter);
+  chkUsaha.addEventListener('change', applyPointFilter);
+  chkKosong.addEventListener('change', applyPointFilter);
+  chkBoundary.addEventListener('change', () => applyBoundaryFilter(currentPrefix()));
+
+  resetBtn.addEventListener('click', () => {
+    selKec.value=''; selDesa.value=''; selSls.value=''; selSubsls.value='';
+    refreshDesaOptions(); refreshSlsOptions(); refreshSubslsOptions();
+    applyPointFilter();
+    fitToAll();
+  });
+
+  function zoomToSelection(){
+    const prefix = currentPrefix();
+    if(!prefix){ fitToAll(); return; }
+    const feats = boundaryFeatures.filter(f => f.properties.idsubsls.startsWith(prefix));
+    if(feats.length===0) return;
+    const tmp = L.geoJSON(feats);
+    map.fitBounds(tmp.getBounds(), { padding:[20,20] });
+  }
+
+  let allBounds = null;
+  function fitToAll(){
+    if(allBounds) map.fitBounds(allBounds, { padding:[20,20] });
+  }
+
+  // ---------- Load data ----------
+  Promise.all([
+    fetch('data/sls.geojson').then(r => r.json()),
+    fetch('data/points.json').then(r => r.json())
+  ]).then(([sls, points]) => {
+    boundaryFeatures = sls.features;
+    pointsData = points;
+
+    // build subInfoIndex + counts
+    boundaryFeatures.forEach(f => {
+      const p = f.properties;
+      subInfoIndex[p.idsubsls] = {
+        nmkec: p.nmkec, nmdesa: p.nmdesa, nmsls: p.nmsls,
+        subslsLabel: 'Sub-SLS ' + p.subsls, luas: p.luas,
+        nm_ketua: p.nm_ketua, nm_gedung: p.nm_gedung
+      };
+    });
+    pointsData.points.forEach(rec => {
+      subsslCount[rec[0]] = (subsslCount[rec[0]] || 0) + 1;
+    });
+
+    // build hierarchy tree
+    boundaryFeatures.forEach(f => {
+      const p = f.properties;
+      const id = p.idsubsls;
+      const kecKey = id.slice(0,7);
+      const desaKey = id.slice(0,10);
+      const slsKey = id.slice(0,14);
+      const subKey = id;
+      if(!tree[kecKey]) tree[kecKey] = { name: p.nmkec, desa: {} };
+      const kecNode = tree[kecKey];
+      if(!kecNode.desa[desaKey]) kecNode.desa[desaKey] = { name: p.nmdesa, sls: {} };
+      const desaNode = kecNode.desa[desaKey];
+      if(!desaNode.sls[slsKey]) desaNode.sls[slsKey] = { name: p.nmsls, subsls: {} };
+      const slsNode = desaNode.sls[slsKey];
+      if(!slsNode.subsls[subKey]) slsNode.subsls[subKey] = { name: 'Sub-SLS ' + p.subsls + (p.subsls==='00' ? ' (utama)' : '') };
+    });
+
+    refreshKecOptions();
+    buildBoundaryLayer();
+    boundaryLayer.addTo(map);
+    boundaryLayer.addData(boundaryFeatures);
+
+    allBounds = boundaryLayer.getBounds();
+    map.fitBounds(allBounds, { padding:[20,20] });
+
+    applyPointFilter();
+    dataAsOfEl.textContent = pointsData.dataAsOf || '-';
+    dataGeneratedAtEl.textContent = pointsData.generatedAt || '-';
+
+    loadingEl.style.display = 'none';
+  }).catch(err => {
+    loadingEl.textContent = '⚠️ Gagal memuat data: ' + err.message + ' (jika membuka file langsung dari komputer, coba jalankan lewat local server / hosting, karena fetch() data tidak berjalan lewat file://).';
+    console.error(err);
+  });
+
+})();
+</script>
+</body>
+</html>
