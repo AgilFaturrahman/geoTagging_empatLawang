@@ -93,7 +93,7 @@ tampil "-" tanpa error.
 ## Catatan penting
 
 - **Tile Google Satellite yang dipakai di sini bukan lewat Google Maps API resmi** (tidak pakai API key, cara umum yang dipakai banyak proyek open-source). Cocok untuk pemakaian internal/terbatas. Untuk pemakaian publik skala besar/jangka panjang sebaiknya pertimbangkan ganti ke Esri World Imagery (gratis & resmi) atau Google Maps Platform resmi (berbayar, perlu API key).
-- Untuk menjaga privasi, kolom **NO KK** (nomor kartu keluarga) **tidak disertakan** di file `points.json` — hanya nama keluarga/usaha, status, dan info wilayah yang ditampilkan. Kalau memang dibutuhkan untuk kerja internal tim, beri tahu saya, nanti saya tambahkan lagi.
+
 
 ## Update data di kemudian hari
 
