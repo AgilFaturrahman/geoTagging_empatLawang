@@ -6,15 +6,15 @@ import json, csv, os, datetime
 # lalu ganti nama filenya di bawah. Boleh juga isi path lengkap kalau filenya
 # ada di lokasi lain, misalnya "C:/Users/Nama/Downloads/geotagging_baru.csv".
 # ============================================================================
-GEOJSON_IN = "data/sls.geojson"  # file boundary SLS/Sub-SLS (dari FASIH)
-CSV_IN = "data/geotagging_all_1september.csv"
+GEOJSON_IN = "data\peta_sls_202511611.geojson"
+CSV_IN = "data\geotagging_all_3september.csv"
 
 # Daftar nama petugas (PML/PPL) per wilayah. Ini file CSV (bukan .xlsx) --
 # kalau file dari kantor masih .xlsx, buka di Excel lalu "Save As" > CSV UTF-8
 # dulu. Kolom yang wajib ada: "KODE WILAYAH" (16 digit, sama seperti KODE
 # SUB-SLS), "Nama PML", "Nama PPL". Boleh dikosongkan (PETUGAS_IN = None) kalau
 # belum ada datanya -- popup SLS tetap jalan, cuma baris PML/PPL-nya kosong.
-PETUGAS_IN = "data/daftar_petugas.csv"
+PETUGAS_IN = "data\DAFTAR WILAYAH & NAMA PETUGAS.csv"
 
 # --- Di bawah ini TIDAK PERLU diubah ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -147,6 +147,9 @@ n = 0
 n_bad_code = 0
 with open(CSV_IN, encoding="utf-8", errors="replace") as f:
     reader = csv.DictReader(f)
+    if reader.fieldnames and "NOMOR BANGUNAN" not in reader.fieldnames:
+        print("catatan: kolom 'NOMOR BANGUNAN' tidak ada di CSV ini -- baris Nomor")
+        print("bangunan di popup titik akan tampil '-' untuk semua titik.")
     for row in reader:
         n += 1
 
@@ -176,6 +179,8 @@ with open(CSV_IN, encoding="utf-8", errors="replace") as f:
         except ValueError:
             continue  # skip rows without valid coordinates
 
+        nobangunan = (row.get("NOMOR BANGUNAN") or "").strip() or None
+
         rec = [
             row["KODE SUB-SLS"].strip(),      # 0 idsubsls (join key to boundary polygons)
             lat,                                # 1
@@ -186,6 +191,7 @@ with open(CSV_IN, encoding="utf-8", errors="replace") as f:
             jml_int,                            # 6
             get_bangunan_idx(row["KODE PENGGUNAAN BANGUNAN"]),  # 7
             row["ID"].strip(),                  # 8 (record id -> link)
+            nobangunan,                          # 9 nomor bangunan
         ]
         points.append(rec)
 
@@ -218,7 +224,7 @@ out = {
     "jenisLegend": jenis_legend,
     "statusLegend": status_legend,
     "bangunanLegend": bangunan_legend,
-    "fields": ["idsubsls", "lat", "lon", "jenis", "status", "nama", "jml", "bangunan", "id"],
+    "fields": ["idsubsls", "lat", "lon", "jenis", "status", "nama", "jml", "bangunan", "id", "nobangunan"],
     "points": points,
 }
 with open(os.path.join(OUT_DIR, "points.json"), "w", encoding="utf-8") as f:

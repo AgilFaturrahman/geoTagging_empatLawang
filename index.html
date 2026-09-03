@@ -382,7 +382,7 @@
 
   // ---------- Popups ----------
   function pointPopupHtml(rec){
-    const [idsubsls, lat, lon, jenisIdx, statusIdx, nama, jml, bangunanIdx, id] = rec;
+    const [idsubsls, lat, lon, jenisIdx, statusIdx, nama, jml, bangunanIdx, id, nobangunan] = rec;
     const info = subInfoIndex[idsubsls] || {};
     const kosong = isBangunanKosong(jenisIdx, nama);
     const jenisLabel = kosong ? 'Bangunan Kosong' : pointsData.jenisLegend[jenisIdx];
@@ -397,6 +397,7 @@
       <div class="popup-row"><span class="k">Status:</span> ${escapeHtml(statusLabel)}</div>
       <div class="popup-row"><span class="k">${jmlLabel}:</span> ${jml===null || jml===undefined ? '-' : jml}</div>
       <div class="popup-row"><span class="k">Penggunaan bangunan:</span> ${escapeHtml(bangunanLabel)}</div>
+      <div class="popup-row"><span class="k">Nomor bangunan:</span> ${escapeHtml(nobangunan||'-')}</div>
       <hr style="border:none;border-top:1px solid #e2e8f0;margin:6px 0;"/>
       <div class="popup-row"><span class="k">Kecamatan:</span> ${escapeHtml(info.nmkec||'-')}</div>
       <div class="popup-row"><span class="k">Desa:</span> ${escapeHtml(info.nmdesa||'-')}</div>
