@@ -6,15 +6,15 @@ import json, csv, os, datetime
 # lalu ganti nama filenya di bawah. Boleh juga isi path lengkap kalau filenya
 # ada di lokasi lain, misalnya "C:/Users/Nama/Downloads/geotagging_baru.csv".
 # ============================================================================
-GEOJSON_IN = "data\peta_sls_202511611.geojson"
-CSV_IN = "data\geotagging_all_3september.csv"
+GEOJSON_IN = "data\\peta_sls_202511611.geojson"
+CSV_IN = "data\\geotagging_all_7september.csv"
 
 # Daftar nama petugas (PML/PPL) per wilayah. Ini file CSV (bukan .xlsx) --
 # kalau file dari kantor masih .xlsx, buka di Excel lalu "Save As" > CSV UTF-8
 # dulu. Kolom yang wajib ada: "KODE WILAYAH" (16 digit, sama seperti KODE
 # SUB-SLS), "Nama PML", "Nama PPL". Boleh dikosongkan (PETUGAS_IN = None) kalau
 # belum ada datanya -- popup SLS tetap jalan, cuma baris PML/PPL-nya kosong.
-PETUGAS_IN = "data\DAFTAR WILAYAH & NAMA PETUGAS.csv"
+PETUGAS_IN = "data\\DAFTAR WILAYAH & NAMA PETUGAS.csv"
 
 # --- Di bawah ini TIDAK PERLU diubah ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
