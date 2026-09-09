@@ -7,7 +7,7 @@ import json, csv, os, datetime
 # ada di lokasi lain, misalnya "C:/Users/Nama/Downloads/geotagging_baru.csv".
 # ============================================================================
 GEOJSON_IN = "data\\peta_sls_202511611.geojson"
-CSV_IN = "data\\geotagging_all_8september.csv"
+CSV_IN = "data\\geotagging_all_9september.csv"
 
 # Daftar nama petugas (PML/PPL) per wilayah. Ini file CSV (bukan .xlsx) --
 # kalau file dari kantor masih .xlsx, buka di Excel lalu "Save As" > CSV UTF-8
