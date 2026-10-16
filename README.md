@@ -38,6 +38,7 @@ File ini adalah **static site murni** (HTML + JS + JSON), tidak butuh backend/se
 
 - Basemap **Google Satellite** (default), plus pilihan Hybrid (satelit+label jalan) dan peta jalan OSM biasa — bisa ganti lewat ikon layer di pojok kanan atas peta.
 - Filter wilayah berjenjang di sidebar kiri: pilih Kecamatan → pilihan Desa otomatis menyesuaikan → lalu SLS → lalu Sub-SLS. Peta otomatis zoom ke area terpilih.
+- Pilihan filter wilayah otomatis disimpan di URL. Tautan seperti `index.html?kec=...&desa=...&sls=...&subsls=...` akan membuka peta langsung pada wilayah tersebut dan bisa dibagikan.
 - Toggle tampilkan/sembunyikan titik **Keluarga** vs **Usaha** (beda warna: biru = Keluarga, oranye = Usaha).
 - Toggle tampil/sembunyikan batas polygon SLS.
 - Klik titik → detail (nama, status keberadaan, jumlah anggota/usaha, penggunaan bangunan, link buka di FASIH).

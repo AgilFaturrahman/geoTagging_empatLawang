@@ -392,6 +392,68 @@
     return '';
   }
 
+  // ---------- URL filter state ----------
+  // Kode wilayah disimpan di URL supaya tautan hasil filter bisa langsung
+  // dibuka kembali pada wilayah yang sama, misalnya:
+  // ?kec=...&desa=...&sls=...&subsls=...
+  const filterUrlKeys = ['kec', 'desa', 'sls', 'subsls'];
+
+  function readFiltersFromUrl(){
+    const params = new URLSearchParams(window.location.search);
+    return {
+      kec: params.get('kec') || '',
+      desa: params.get('desa') || '',
+      sls: params.get('sls') || '',
+      subsls: params.get('subsls') || ''
+    };
+  }
+
+  function syncFiltersToUrl(){
+    const url = new URL(window.location.href);
+    filterUrlKeys.forEach(key => url.searchParams.delete(key));
+
+    if(selKec.value) url.searchParams.set('kec', selKec.value);
+    if(selDesa.value) url.searchParams.set('desa', selDesa.value);
+    if(selSls.value) url.searchParams.set('sls', selSls.value);
+    if(selSubsls.value) url.searchParams.set('subsls', selSubsls.value);
+
+    // replaceState memperbarui tautan yang bisa disalin tanpa menambah satu
+    // entri baru ke riwayat browser setiap kali filter diganti.
+    const query = url.searchParams.toString();
+    const nextUrl = url.pathname + (query ? '?' + query : '') + url.hash;
+    window.history.replaceState(null, '', nextUrl);
+  }
+
+  function restoreFiltersFromUrl(){
+    const requested = readFiltersFromUrl();
+
+    // Setiap tingkat divalidasi terhadap induknya. Jika kode tidak valid atau
+    // tidak cocok dengan hierarki, tingkat tersebut dan turunannya dikosongkan.
+    const kec = tree[requested.kec] ? requested.kec : '';
+    selKec.value = kec;
+    refreshDesaOptions();
+
+    const kecNode = kec ? tree[kec] : null;
+    const desa = kecNode && kecNode.desa[requested.desa] ? requested.desa : '';
+    selDesa.value = desa;
+    refreshSlsOptions();
+
+    const desaNode = kecNode && desa ? kecNode.desa[desa] : null;
+    const sls = desaNode && desaNode.sls[requested.sls] ? requested.sls : '';
+    selSls.value = sls;
+    refreshSubslsOptions();
+
+    const slsNode = desaNode && sls ? desaNode.sls[sls] : null;
+    const subsls = slsNode && slsNode.subsls[requested.subsls] ? requested.subsls : '';
+    selSubsls.value = subsls;
+
+    // Membersihkan parameter yang tidak valid sekaligus menormalkan URL
+    // ketika pengguna membuka tautan dengan kombinasi kode yang tidak cocok.
+    syncFiltersToUrl();
+    applyPointFilter();
+    zoomToSelection();
+  }
+
   // ---------- Popups ----------
   function pointPopupHtml(rec){
     const [idsubsls, lat, lon, jenisIdx, statusIdx, nama, jml, bangunanIdx, id, nobangunan] = rec;
@@ -508,22 +570,29 @@
   selKec.addEventListener('change', () => {
     selDesa.value = ''; selSls.value=''; selSubsls.value='';
     refreshDesaOptions(); refreshSlsOptions(); refreshSubslsOptions();
+    syncFiltersToUrl();
     applyPointFilter();
     zoomToSelection();
   });
   selDesa.addEventListener('change', () => {
     selSls.value=''; selSubsls.value='';
     refreshSlsOptions(); refreshSubslsOptions();
+    syncFiltersToUrl();
     applyPointFilter();
     zoomToSelection();
   });
   selSls.addEventListener('change', () => {
     selSubsls.value='';
     refreshSubslsOptions();
+    syncFiltersToUrl();
     applyPointFilter();
     zoomToSelection();
   });
-  selSubsls.addEventListener('change', () => { applyPointFilter(); zoomToSelection(); });
+  selSubsls.addEventListener('change', () => {
+    syncFiltersToUrl();
+    applyPointFilter();
+    zoomToSelection();
+  });
 
   chkKeluarga.addEventListener('change', applyPointFilter);
   chkUsaha.addEventListener('change', applyPointFilter);
@@ -533,6 +602,7 @@
   resetBtn.addEventListener('click', () => {
     selKec.value=''; selDesa.value=''; selSls.value=''; selSubsls.value='';
     refreshDesaOptions(); refreshSlsOptions(); refreshSubslsOptions();
+    syncFiltersToUrl();
     applyPointFilter();
     fitToAll();
   });
@@ -594,7 +664,7 @@
     allBounds = boundaryLayer.getBounds();
     map.fitBounds(allBounds, { padding:[20,20] });
 
-    applyPointFilter();
+    restoreFiltersFromUrl();
     dataAsOfEl.textContent = pointsData.dataAsOf || '-';
     dataGeneratedAtEl.textContent = pointsData.generatedAt || '-';
 
