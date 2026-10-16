@@ -393,29 +393,32 @@
   }
 
   // ---------- URL filter state ----------
-  // Kode wilayah disimpan di URL supaya tautan hasil filter bisa langsung
-  // dibuka kembali pada wilayah yang sama, misalnya:
-  // ?kec=...&desa=...&sls=...&subsls=...
-  const filterUrlKeys = ['kec', 'desa', 'sls', 'subsls'];
+  // Satu kode wilayah disimpan di URL. Karena kode Kecamatan, Desa, SLS,
+  // dan Sub-SLS adalah potongan berurutan dari id Sub-SLS, URL cukup memakai
+  // prefix yang sedang dipilih, misalnya: ?wilayah=1611010012100100
+  const filterUrlKeys = ['wilayah', 'kec', 'desa', 'sls', 'subsls'];
 
-  function readFiltersFromUrl(){
+  function readFilterCodeFromUrl(){
     const params = new URLSearchParams(window.location.search);
-    return {
-      kec: params.get('kec') || '',
-      desa: params.get('desa') || '',
-      sls: params.get('sls') || '',
-      subsls: params.get('subsls') || ''
-    };
+    const code = params.get('wilayah');
+    if(code) return code.trim();
+
+    // Tetap menerima format URL lama agar tautan yang sudah terlanjur dibagi
+    // tidak rusak. Setelah dibuka, formatnya langsung dinormalisasi menjadi
+    // satu parameter ?wilayah=....
+    for(const key of ['subsls', 'sls', 'desa', 'kec']){
+      const legacyCode = params.get(key);
+      if(legacyCode) return legacyCode.trim();
+    }
+    return '';
   }
 
   function syncFiltersToUrl(){
     const url = new URL(window.location.href);
     filterUrlKeys.forEach(key => url.searchParams.delete(key));
 
-    if(selKec.value) url.searchParams.set('kec', selKec.value);
-    if(selDesa.value) url.searchParams.set('desa', selDesa.value);
-    if(selSls.value) url.searchParams.set('sls', selSls.value);
-    if(selSubsls.value) url.searchParams.set('subsls', selSubsls.value);
+    const prefix = currentPrefix();
+    if(prefix) url.searchParams.set('wilayah', prefix);
 
     // replaceState memperbarui tautan yang bisa disalin tanpa menambah satu
     // entri baru ke riwayat browser setiap kali filter diganti.
@@ -425,26 +428,29 @@
   }
 
   function restoreFiltersFromUrl(){
-    const requested = readFiltersFromUrl();
+    const requestedCode = readFilterCodeFromUrl();
 
-    // Setiap tingkat divalidasi terhadap induknya. Jika kode tidak valid atau
-    // tidak cocok dengan hierarki, tingkat tersebut dan turunannya dikosongkan.
-    const kec = tree[requested.kec] ? requested.kec : '';
+    // Ambil potongan kode sesuai tingkat wilayah. Validasi dilakukan terhadap
+    // tree agar kode yang tidak ada otomatis kembali ke pilihan kosong.
+    const kecCode = requestedCode.slice(0, 7);
+    const kec = tree[kecCode] ? kecCode : '';
     selKec.value = kec;
     refreshDesaOptions();
 
     const kecNode = kec ? tree[kec] : null;
-    const desa = kecNode && kecNode.desa[requested.desa] ? requested.desa : '';
+    const desaCode = requestedCode.slice(0, 10);
+    const desa = kecNode && kecNode.desa[desaCode] ? desaCode : '';
     selDesa.value = desa;
     refreshSlsOptions();
 
     const desaNode = kecNode && desa ? kecNode.desa[desa] : null;
-    const sls = desaNode && desaNode.sls[requested.sls] ? requested.sls : '';
+    const slsCode = requestedCode.slice(0, 14);
+    const sls = desaNode && desaNode.sls[slsCode] ? slsCode : '';
     selSls.value = sls;
     refreshSubslsOptions();
 
     const slsNode = desaNode && sls ? desaNode.sls[sls] : null;
-    const subsls = slsNode && slsNode.subsls[requested.subsls] ? requested.subsls : '';
+    const subsls = slsNode && slsNode.subsls[requestedCode] ? requestedCode : '';
     selSubsls.value = subsls;
 
     // Membersihkan parameter yang tidak valid sekaligus menormalkan URL
